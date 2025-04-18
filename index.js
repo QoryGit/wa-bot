@@ -13,14 +13,6 @@ app.get("/", (req, res) => {
 
 app.listen(3000, () => {
   console.log("Server running on port 3000");
-  
-  // Keepalive setiap 5 menit
-  setInterval(() => {
-    console.log("Keepalive triggered");
-    if (sock?.user) {
-      console.log("Bot is still connected as", sock.user.id);
-    }
-  }, 5 * 60 * 1000);
 });
 const { format } = require("path");
 const P = require("pino");
