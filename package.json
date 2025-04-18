@@ -12,6 +12,7 @@
   "dependencies": {
     "@hapi/boom": "^10.0.1",
     "@types/node": "^22.13.11",
-    "@whiskeysockets/baileys": "^6.7.16"
+    "@whiskeysockets/baileys": "^6.7.16",
+    "qrcode-terminal": "^0.12.0"
   }
 }
