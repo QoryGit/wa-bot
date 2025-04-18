@@ -54,10 +54,12 @@ async function connectToWhatsApp() {
     }
     else if (messageText === "!quote") {
       try {
+        const fetch = (await import('node-fetch')).default;
         const response = await fetch("https://api.quotable.io/random");
         const data = await response.json();
         await sock.sendMessage(from, { text: `"${data.content}"\n\n- ${data.author}` });
       } catch (error) {
+        console.error('Quote error:', error);
         await sock.sendMessage(from, { text: "Maaf, tidak bisa mengambil quote saat ini." });
       }
     }
