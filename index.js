@@ -13,19 +13,30 @@ app.get("/", (req, res) => {
 
 app.listen(3000, () => {
   console.log("Server running on port 3000");
+  
+  // Enhanced keepalive system
+  const KEEPALIVE_INTERVAL = 4 * 60 * 1000; // 4 minutes
+  
+  setInterval(async () => {
+    try {
+      console.log("Keepalive: Checking system status");
+      
+      // Check bot connection
+      if (sock?.user) {
+        console.log("Bot status: Connected as", sock.user.id);
+      } else {
+        console.log("Bot status: Reconnecting...");
+        await connectToWhatsApp();
+      }
 
-  // Multiple keepalive strategies
-  setInterval(() => {
-    console.log("Keepalive: Primary check");
-    fetch("https://YOUR-REPL-NAME.repl.co").catch(console.error);
-  }, 4 * 60 * 1000);
-
-  setInterval(() => {
-    console.log("Keepalive: Connection check");
-    if (sock?.user) {
-      console.log("Bot status: Connected as", sock.user.id);
+      // Memory usage check
+      const used = process.memoryUsage();
+      console.log(`Memory usage: ${Math.round(used.heapUsed / 1024 / 1024)}MB`);
+      
+    } catch (err) {
+      console.error("Keepalive error:", err);
     }
-  }, 5 * 60 * 1000);
+  }, KEEPALIVE_INTERVAL);
 });
 const { format } = require("path");
 const P = require("pino");
