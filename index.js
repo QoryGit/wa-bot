@@ -39,6 +39,8 @@ async function connectToWhatsApp() {
 !pencipta - Pencipta bot
 !info - Info grup (khusus grup)
 !time - Lihat waktu saat ini
+!quote - Tampilkan quote random
+!cuaca [kota] - Cek cuaca di kota tertentu
 !help - Tampilkan bantuan ini`;
       await sock.sendMessage(from, { text: help });
     }
@@ -48,6 +50,26 @@ async function connectToWhatsApp() {
     }
     else if (messageText === "!pencipta") {
       await sock.sendMessage(from, { text: "Pencipta Bot ini adalah Sang baginda raja Rizki" });
+    }
+    else if (messageText === "!quote") {
+      try {
+        const response = await fetch("https://api.quotable.io/random");
+        const data = await response.json();
+        await sock.sendMessage(from, { text: `"${data.content}"\n\n- ${data.author}` });
+      } catch (error) {
+        await sock.sendMessage(from, { text: "Maaf, tidak bisa mengambil quote saat ini." });
+      }
+    }
+    else if (messageText.startsWith("!cuaca ")) {
+      const city = messageText.slice(7);
+      try {
+        const response = await fetch(`https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=YOUR_API_KEY&units=metric`);
+        const data = await response.json();
+        const weather = `Cuaca di ${city}:\nSuhu: ${data.main.temp}°C\nKelembaban: ${data.main.humidity}%\nKondisi: ${data.weather[0].description}`;
+        await sock.sendMessage(from, { text: weather });
+      } catch (error) {
+        await sock.sendMessage(from, { text: "Maaf, tidak bisa mengambil info cuaca saat ini." });
+      }
     }
   });
 
