@@ -1,4 +1,4 @@
-const crypto = require("crypto");
+global.crypto = require("crypto");
 const {
   default: makeWASocket,
   DisconnectReason,
