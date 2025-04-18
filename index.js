@@ -115,15 +115,26 @@ async function connectToWhatsApp() {
     console.log("Connection update:", update);
 
     if (connection === "close") {
-      if (
-        lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut
-      ) {
-        console.log("Reconnecting...");
-        connectToWhatsApp();
+      const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
+      
+      if (shouldReconnect) {
+        console.log("Koneksi terputus, mencoba menghubungkan kembali...");
+        setTimeout(() => {
+          connectToWhatsApp();
+        }, 3000);
       }
     } else if (connection === "open") {
-      console.log("Connected successfully!");
+      console.log("Bot berhasil terhubung!");
     }
+  });
+
+  // Handle errors
+  process.on('uncaughtException', (err) => {
+    console.log('Uncaught Exception:', err);
+  });
+
+  process.on('unhandledRejection', (err) => {
+    console.log('Unhandled Rejection:', err);
   });
 
   // Listen for creds update
