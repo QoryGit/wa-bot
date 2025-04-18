@@ -56,13 +56,10 @@ async function connectToWhatsApp() {
     } else if (messageText === "!quote") {
       try {
         const axios = require("axios");
-        const res = await axios.get("https://api.quotable.io/random", {
-          timeout: 5000,
-          headers: {
-            'Accept': 'application/json'
-          }
+        const res = await axios.get("https://api.gameofthronesquotes.xyz/v1/random", {
+          timeout: 8000
         });
-        const quote = `"${res.data.content}"\n— ${res.data.author}`;
+        const quote = `"${res.data.sentence}"\n— ${res.data.character.name}`;
         await sock.sendMessage(from, { text: quote });
       } catch (error) {
         console.error("Quote error:", error);
