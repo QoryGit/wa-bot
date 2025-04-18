@@ -36,6 +36,7 @@ async function connectToWhatsApp() {
       const help = `Daftar Command Bot:
 !ping - Test bot
 !hello - Sapa bot
+!pencipta - Pencipta bot
 !info - Info grup (khusus grup)
 !time - Lihat waktu saat ini
 !help - Tampilkan bantuan ini`;
@@ -45,6 +46,8 @@ async function connectToWhatsApp() {
       const time = new Date().toLocaleString('id-ID');
       await sock.sendMessage(from, { text: `Waktu saat ini: ${time}` });
     }
+  }else if(messageText === "!pencipta"){
+    await sock.sendMessage(from, { text: "Pencipta Bot ini adalah Sang baginda raja Rizki"})
   });
 
   // Listen for connection updates
