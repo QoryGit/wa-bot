@@ -23,6 +23,9 @@ async function connectToWhatsApp() {
     if (messageText === "!ping") {
       await sock.sendMessage(from, { text: "Pong!" });
     }
+    else if (messageText === "!hello") {
+      await sock.sendMessage(from, { text: "Hi!" });
+    }
   });
 
   // Listen for connection updates
