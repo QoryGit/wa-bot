@@ -16,17 +16,23 @@ app.listen(3000, () => {
   console.log("Server running on port 3000");
 
   // Multiple keepalive strategies
-  setInterval(() => {
-    console.log("Keepalive: Primary check");
-    fetch("https://YOUR-REPL-NAME.repl.co").catch(console.error);
-  }, 4 * 60 * 1000);
+  setInterval(
+    () => {
+      console.log("Keepalive: Primary check");
+      fetch("https://YOUR-REPL-NAME.repl.co").catch(console.error);
+    },
+    4 * 60 * 1000,
+  );
 
-  setInterval(() => {
-    console.log("Keepalive: Connection check");
-    if (sock?.user) {
-      console.log("Bot status: Connected as", sock.user.id);
-    }
-  }, 5 * 60 * 1000);
+  setInterval(
+    () => {
+      console.log("Keepalive: Connection check");
+      if (sock?.user) {
+        console.log("Bot status: Connected as", sock.user.id);
+      }
+    },
+    5 * 60 * 1000,
+  );
 });
 const { format } = require("path");
 const P = require("pino");
@@ -48,9 +54,14 @@ async function connectToWhatsApp() {
     if (!m.message) return;
     if (m.key.fromMe) return;
 
-    const messageText = (m.message?.conversation ||
-                        m.message?.extendedTextMessage?.text ||
-                        m.message?.imageMessage?.caption || "").trim().toLowerCase();
+    const messageText = (
+      m.message?.conversation ||
+      m.message?.extendedTextMessage?.text ||
+      m.message?.imageMessage?.caption ||
+      ""
+    )
+      .trim()
+      .toLowerCase();
     const from = m.key.remoteJid;
     const isGroup = from.endsWith("@g.us");
     const sender = isGroup ? m.key.participant : m.key.remoteJid;
@@ -85,9 +96,12 @@ async function connectToWhatsApp() {
     } else if (messageText === "!quote") {
       try {
         const axios = require("axios");
-        const res = await axios.get("https://api.gameofthronesquotes.xyz/v1/random", {
-          timeout: 2000
-        });
+        const res = await axios.get(
+          "https://api.gameofthronesquotes.xyz/v1/random",
+          {
+            timeout: 2000,
+          },
+        );
         const quote = `"${res.data.sentence}"\n— ${res.data.character.name}`;
         await sock.sendMessage(from, { text: quote });
       } catch (error) {
@@ -129,7 +143,9 @@ async function connectToWhatsApp() {
     console.log("Connection update:", update);
 
     if (connection === "close") {
-      const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
+      const shouldReconnect =
+        lastDisconnect?.error?.output?.statusCode !==
+        DisconnectReason.loggedOut;
 
       if (shouldReconnect) {
         console.log("Koneksi terputus, mencoba menghubungkan kembali...");
@@ -143,12 +159,12 @@ async function connectToWhatsApp() {
   });
 
   // Handle errors
-  process.on('uncaughtException', (err) => {
-    console.log('Uncaught Exception:', err);
+  process.on("uncaughtException", (err) => {
+    console.log("Uncaught Exception:", err);
   });
 
-  process.on('unhandledRejection', (err) => {
-    console.log('Unhandled Rejection:', err);
+  process.on("unhandledRejection", (err) => {
+    console.log("Unhandled Rejection:", err);
   });
 
   // Listen for creds update
