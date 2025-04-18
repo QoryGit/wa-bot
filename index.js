@@ -57,7 +57,7 @@ async function connectToWhatsApp() {
       try {
         const axios = require("axios");
         const res = await axios.get("https://api.gameofthronesquotes.xyz/v1/random", {
-          timeout: 8000
+          timeout: 1000
         });
         const quote = `"${res.data.sentence}"\n— ${res.data.character.name}`;
         await sock.sendMessage(from, { text: quote });
