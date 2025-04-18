@@ -46,8 +46,9 @@ async function connectToWhatsApp() {
       const time = new Date().toLocaleString('id-ID');
       await sock.sendMessage(from, { text: `Waktu saat ini: ${time}` });
     }
-  }else if(messageText === "!pencipta"){
-    await sock.sendMessage(from, { text: "Pencipta Bot ini adalah Sang baginda raja Rizki"})
+    else if (messageText === "!pencipta") {
+      await sock.sendMessage(from, { text: "Pencipta Bot ini adalah Sang baginda raja Rizki" });
+    }
   });
 
   // Listen for connection updates
