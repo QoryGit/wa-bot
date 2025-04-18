@@ -3,6 +3,17 @@ const {
   DisconnectReason,
   useMultiFileAuthState,
 } = require("@whiskeysockets/baileys");
+const express = require("express");
+const app = express();
+
+// Endpoint untuk UptimeRobot
+app.get("/", (req, res) => {
+  res.send("Bot is running!");
+});
+
+app.listen(3000, () => {
+  console.log("Server running on port 3000");
+});
 const { format } = require("path");
 const P = require("pino");
 const qrcode = require("qrcode-terminal");
