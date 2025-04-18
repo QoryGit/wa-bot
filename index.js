@@ -56,10 +56,13 @@ async function connectToWhatsApp() {
     } else if (messageText === "!quote") {
       try {
         const axios = require("axios");
-        const res = await axios.get("https://api.gameofthronesquotes.xyz/v1/random", {
+        const res = await axios.get("https://api.quotable.io/random", {
           timeout: 8000
         });
-        const quote = `"${res.data.sentence}"\n— ${res.data.character.name}`;
+        // Terjemahkan quote menggunakan Google Translate API
+        const translateRes = await axios.get(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=id&dt=t&q=${encodeURIComponent(res.data.content)}`);
+        const translatedQuote = translateRes.data[0][0][0];
+        const quote = `"${translatedQuote}"\n— ${res.data.author}`;
         await sock.sendMessage(from, { text: quote });
       } catch (error) {
         console.error("Quote error:", error);
