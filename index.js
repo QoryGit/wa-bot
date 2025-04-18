@@ -55,20 +55,15 @@ async function connectToWhatsApp() {
       });
     } else if (messageText === "!quote") {
       try {
-        // const fetch = (await import("node-fetch")).default;
-        // const response = await fetch("https://api.api-ninjas.com/v1/quotes");
-        // const data = await response.json();
-        // await sock.sendMessage(from, {
-        //   text: `"${data.quote}"\n\n- ${data.author}`,
-        // });
         const axios = require("axios");
-
-        // console.log(response.data.content); // quote
-        // console.log(response.data.author);  // penulis
-        const res = await          axios.get("https://api.quotable.io/random");
-        const quote = `"${res.data.content}"\n— $    {res.data.author}`;
-
-        sock.sendMessage(msg.key.remoteJid, { text: quote });
+        const res = await axios.get("https://api.quotable.io/random", {
+          timeout: 5000,
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+        const quote = `"${res.data.content}"\n— ${res.data.author}`;
+        await sock.sendMessage(from, { text: quote });
       } catch (error) {
         console.error("Quote error:", error);
         await sock.sendMessage(from, {
