@@ -31,10 +31,15 @@ async function connectToWhatsApp() {
   // Listen for connection updates
   sock.ev.on("connection.update", (update) => {
     const { connection, lastDisconnect } = update;
+    console.log('Connection update:', update);
+    
     if (connection === "close") {
       if (lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut) {
+        console.log('Reconnecting...');
         connectToWhatsApp();
       }
+    } else if (connection === "open") {
+      console.log('Connected successfully!');
     }
   });
 
