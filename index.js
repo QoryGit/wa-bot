@@ -32,6 +32,19 @@ async function connectToWhatsApp() {
       const info = `Nama Grup: ${groupMetadata.subject}\nTotal Member: ${groupMetadata.participants.length}`;
       await sock.sendMessage(from, { text: info });
     }
+    else if (messageText === "!help") {
+      const help = `Daftar Command Bot:
+!ping - Test bot
+!hello - Sapa bot
+!info - Info grup (khusus grup)
+!time - Lihat waktu saat ini
+!help - Tampilkan bantuan ini`;
+      await sock.sendMessage(from, { text: help });
+    }
+    else if (messageText === "!time") {
+      const time = new Date().toLocaleString('id-ID');
+      await sock.sendMessage(from, { text: `Waktu saat ini: ${time}` });
+    }
   });
 
   // Listen for connection updates
