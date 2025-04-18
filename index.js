@@ -13,12 +13,17 @@ app.get("/", (req, res) => {
 
 app.listen(3000, () => {
   console.log("Server running on port 3000");
-  
-  // Keepalive setiap 5 menit
+
+  // Multiple keepalive strategies
   setInterval(() => {
-    console.log("Keepalive triggered");
+    console.log("Keepalive: Primary check");
+    fetch("https://YOUR-REPL-NAME.repl.co").catch(console.error);
+  }, 4 * 60 * 1000);
+
+  setInterval(() => {
+    console.log("Keepalive: Connection check");
     if (sock?.user) {
-      console.log("Bot is still connected as", sock.user.id);
+      console.log("Bot status: Connected as", sock.user.id);
     }
   }, 5 * 60 * 1000);
 });
@@ -38,7 +43,7 @@ async function connectToWhatsApp() {
   // Listen for messages
   sock.ev.on("messages.upsert", async ({ messages, type }) => {
     const m = messages[0];
-    
+
     if (!m.message) return;
     if (m.key.fromMe) return;
 
@@ -124,7 +129,7 @@ async function connectToWhatsApp() {
 
     if (connection === "close") {
       const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
-      
+
       if (shouldReconnect) {
         console.log("Koneksi terputus, mencoba menghubungkan kembali...");
         setTimeout(() => {
