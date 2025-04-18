@@ -41,6 +41,7 @@ async function connectToWhatsApp() {
 !time - Lihat waktu saat ini
 !quote - Tampilkan quote random
 !cuaca [kota] - Cek cuaca di kota tertentu
+!kalkulator [ekspresi] - Hitung ekspresi matematika
 !help - Tampilkan bantuan ini`;
       await sock.sendMessage(from, { text: help });
     }
@@ -58,6 +59,15 @@ async function connectToWhatsApp() {
         await sock.sendMessage(from, { text: `"${data.content}"\n\n- ${data.author}` });
       } catch (error) {
         await sock.sendMessage(from, { text: "Maaf, tidak bisa mengambil quote saat ini." });
+      }
+    }
+    else if (messageText.startsWith("!kalkulator ")) {
+      const expression = messageText.slice(11);
+      try {
+        const result = require('mathjs').evaluate(expression);
+        await sock.sendMessage(from, { text: `Hasil: ${result}` });
+      } catch (error) {
+        await sock.sendMessage(from, { text: "Maaf, ekspresi matematika tidak valid." });
       }
     }
     else if (messageText.startsWith("!cuaca ")) {

@@ -14,6 +14,7 @@
     "@types/node": "^22.13.11",
     "@whiskeysockets/baileys": "^6.17.16",
     "axios": "^1.8.4",
+    "mathjs": "^14.4.0",
     "node-fetch": "^3.3.2",
     "pino": "^9.6.0",
     "qrcode-terminal": "^0.12.0"
