@@ -19,12 +19,18 @@ async function connectToWhatsApp() {
     
     const messageText = m.message?.conversation || m.message?.extendedTextMessage?.text || "";
     const from = m.key.remoteJid;
+    const isGroup = from.endsWith('@g.us');
 
     if (messageText === "!ping") {
       await sock.sendMessage(from, { text: "Pong!" });
     }
     else if (messageText === "!hello") {
       await sock.sendMessage(from, { text: "Hi!" });
+    }
+    else if (messageText === "!info" && isGroup) {
+      const groupMetadata = await sock.groupMetadata(from);
+      const info = `Nama Grup: ${groupMetadata.subject}\nTotal Member: ${groupMetadata.participants.length}`;
+      await sock.sendMessage(from, { text: info });
     }
   });
 
