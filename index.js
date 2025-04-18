@@ -17,14 +17,16 @@ async function connectToWhatsApp() {
   });
 
   // Listen for messages
-  sock.ev.on("messages.upsert", async ({ messages }) => {
+  sock.ev.on("messages.upsert", async ({ messages, type }) => {
     const m = messages[0];
-    if (!m.message) return;
+    if (!m.message || m.key.fromMe) return;
 
-    const messageText =
-      m.message?.conversation || m.message?.extendedTextMessage?.text || "";
+    const messageText = (m.message?.conversation || 
+                        m.message?.extendedTextMessage?.text || 
+                        m.message?.imageMessage?.caption || "").trim();
     const from = m.key.remoteJid;
     const isGroup = from.endsWith("@g.us");
+    const sender = m.key.participant || m.key.remoteJid;
 
     if (messageText === "!ping") {
       await sock.sendMessage(from, { text: "Pong!" });
