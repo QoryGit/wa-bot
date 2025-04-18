@@ -55,13 +55,13 @@ async function connectToWhatsApp() {
       await sock.sendMessage(from, { text: `Waktu saat ini: ${time}` });
     } else if (messageText === "!pencipta") {
       await sock.sendMessage(from, {
-        text: "Sudah spamnya????",
+        text: "Baginda Raja Rizki😊😊",
       });
     } else if (messageText === "!quote") {
       try {
         const axios = require("axios");
         const res = await axios.get("https://api.gameofthronesquotes.xyz/v1/random", {
-          timeout: 1000
+          timeout: 2000
         });
         const quote = `"${res.data.sentence}"\n— ${res.data.character.name}`;
         await sock.sendMessage(from, { text: quote });
