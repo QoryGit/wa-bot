@@ -7,6 +7,14 @@ const {
 const express = require("express");
 const app = express();
 
+// State untuk menyimpan permainan per pengguna
+const gameState = {};
+
+// Fungsi untuk menghasilkan angka acak
+function generateRandomNumber() {
+  return Math.floor(Math.random() * 100) + 1;
+}
+
 // Endpoint untuk UptimeRobot
 app.get("/", (req, res) => {
   res.send("Bot is running!");
@@ -135,54 +143,59 @@ async function connectToWhatsApp() {
         });
       }
     }
-      else if (text === 'main tebak') {
-    // Inisialisasi permainan
-    gameState[from] = {
-      answer: generateRandomNumber(),
-      isPlaying: true
-    };
+        // Perintah untuk memulai permainan: "main tebak"
+    else if (messageText === '!main tebak') {
+      // Inisialisasi permainan
+      gameState[from] = {
+        answer: generateRandomNumber(),
+        isPlaying: true
+      };
 
-    await message.reply(
-    ` Permainan Tebak Angka dimulai!\n` +
-      `Tebak angka antara 1 dan 100.\n` +
-      `Ketik angka tebakanmu, atau "stop" untuk menyerah.`
-    );
-    return;
-  }
+      await sock.sendMessage(from, {
+        text:
+          `Permainan Tebak Angka dimulai!\n` +
+          `Tebak angka antara 1 dan 100.\n` +
+          `Ketik angka tebakanmu, atau "stop" untuk menyerah.`
+      });
+      return;
+    }
 
-  // Tangani tebakan atau perintah stop
-  if (gameState[from]?.isPlaying) {
-    if (text === 'stop') {
+    // Tangani tebakan atau perintah stop
+    if (gameState[from]?.isPlaying) {
+      if (text === 'stop') {
+        const { answer } = gameState[from];
+        delete gameState[from];
+        await sock.sendMessage(from, {
+          text:
+            `Permainan dihentikan.\n` +
+            `Angka yang benar adalah ${answer}.`
+        });
+        return;
+      }
+
+      const guess = parseInt(text);
+      if (isNaN(guess) || guess < 1 || guess > 100) {
+        await sock.sendMessage(from, {
+          text: 'Ketik angka antara 1 dan 100, atau "stop" untuk menyerah.'
+        });
+        return;
+      }
+
       const { answer } = gameState[from];
-      delete gameState[from];
-      await message.reply(
-        `Permainan dihentikan.\n`+
-        `Angka yang benar adalah ${answer}.`
-      );
+      if (guess === answer) {
+        delete gameState[from];
+        await sock.sendMessage(from, {
+          text:
+            `Selamat, kamu menang!\n` +
+            `Angka yang benar adalah ${answer}.`
+        });
+      } else if (guess > answer) {
+        await sock.sendMessage(from, { text: `Tebakanmu terlalu tinggi! Coba lagi.` });
+      } else {
+        await sock.sendMessage(from, { text: `Tebakanmu terlalu rendah! Coba lagi.` });
+      }
       return;
     }
-
-    const guess = parseInt(text);
-    if (isNaN(guess) || guess < 1 || guess > 100) {
-      await message.reply('Ketik angka antara 1 dan 100, atau "stop" untuk menyerah.');
-      return;
-    }
-
-    const { answer } = gameState[from];
-    if (guess === answer) {
-      delete gameState[from];
-      await message.reply(
-        `Selamat, kamu menang!\n` +
-        `Angka yang benar adalah ${answer}.`
-      );
-    } else if (guess > answer) {
-      await message.reply(`Tebakanmu terlalu tinggi! Coba lagi.`);
-    } else {
-      await message.reply(`Tebakanmu terlalu rendah! Coba lagi.`);
-    }
-    return;
-  }
-
 
   });
 
