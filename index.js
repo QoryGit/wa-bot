@@ -91,7 +91,7 @@ async function connectToWhatsApp() {
       await sock.sendMessage(from, { text: `Waktu saat ini: ${time}` });
     } else if (messageText === "!pencipta") {
       await sock.sendMessage(from, {
-        text: "Baginda Raja Rizki😊😊",
+        text: "rizki",
       });
     } else if (messageText === "!quote") {
       try {
@@ -135,6 +135,55 @@ async function connectToWhatsApp() {
         });
       }
     }
+      else if (text === 'main tebak') {
+    // Inisialisasi permainan
+    gameState[from] = {
+      answer: generateRandomNumber(),
+      isPlaying: true
+    };
+
+    await message.reply(
+    ` Permainan Tebak Angka dimulai!\n` +
+      `Tebak angka antara 1 dan 100.\n` +
+      `Ketik angka tebakanmu, atau "stop" untuk menyerah.`
+    );
+    return;
+  }
+
+  // Tangani tebakan atau perintah stop
+  if (gameState[from]?.isPlaying) {
+    if (text === 'stop') {
+      const { answer } = gameState[from];
+      delete gameState[from];
+      await message.reply(
+        `Permainan dihentikan.\n`+
+        `Angka yang benar adalah ${answer}.`
+      );
+      return;
+    }
+
+    const guess = parseInt(text);
+    if (isNaN(guess) || guess < 1 || guess > 100) {
+      await message.reply('Ketik angka antara 1 dan 100, atau "stop" untuk menyerah.');
+      return;
+    }
+
+    const { answer } = gameState[from];
+    if (guess === answer) {
+      delete gameState[from];
+      await message.reply(
+        `Selamat, kamu menang!\n` +
+        `Angka yang benar adalah ${answer}.`
+      );
+    } else if (guess > answer) {
+      await message.reply(`Tebakanmu terlalu tinggi! Coba lagi.`);
+    } else {
+      await message.reply(`Tebakanmu terlalu rendah! Coba lagi.`);
+    }
+    return;
+  }
+
+
   });
 
   // Listen for connection updates
