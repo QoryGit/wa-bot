@@ -51,8 +51,8 @@ async function connectToWhatsApp() {
   sock.ev.on("messages.upsert", async ({ messages, type }) => {
     const m = messages[0];
 
-    if (!m.message) return;
-    if (m.key.fromMe) return;
+    // if (!m.message) return;
+    // if (m.key.fromMe) return;
 
     const messageText = (
       m.message?.conversation ||
