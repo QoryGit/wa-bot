@@ -162,7 +162,7 @@ async function connectToWhatsApp() {
 
     // Tangani tebakan atau perintah stop
     if (gameState[from]?.isPlaying) {
-      if (text === 'stop') {
+      if (messageText === 'stop') {
         const { answer } = gameState[from];
         delete gameState[from];
         await sock.sendMessage(from, {
@@ -173,7 +173,7 @@ async function connectToWhatsApp() {
         return;
       }
 
-      const guess = parseInt(text);
+      const guess = parseInt(messageText);
       if (isNaN(guess) || guess < 1 || guess > 100) {
         await sock.sendMessage(from, {
           text: 'Ketik angka antara 1 dan 100, atau "stop" untuk menyerah.'
