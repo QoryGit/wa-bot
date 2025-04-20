@@ -79,7 +79,6 @@ async function connectToWhatsApp() {
       console.log("Pesan gambar diterima.");
 
       try {
-        // Unduh gambar menggunakan fungsi downloadMediaMessage
         const buffer = await downloadMediaMessage(m, "buffer", {}, { logger: P({ level: "silent" }) });
         console.log("Gambar berhasil diunduh:", buffer ? "Ya" : "Tidak");
 
@@ -90,20 +89,15 @@ async function connectToWhatsApp() {
           return;
         }
 
-        const outputPath = `./temp/sticker.webp`;
+        console.time("Proses gambar");
+        const stickerBuffer = await sharp(buffer)
+          .resize(512, 512, { fit: "contain" }) // Batasi ukuran gambar
+          .webp({ quality: 50 }) // Kurangi kualitas untuk mempercepat proses
+          .toBuffer();
+        console.timeEnd("Proses gambar");
 
-        console.log("Memproses gambar...");
-        await sharp(buffer)
-          .resize(512, 512, { fit: "contain" })
-          .webp({ quality: 80 })
-          .toFile(outputPath);
-
-        console.log("Gambar berhasil dikonversi menjadi stiker.");
-        const stickerBuffer = fs.readFileSync(outputPath);
         await sock.sendMessage(from, { sticker: stickerBuffer });
-
         console.log("Stiker berhasil dikirim.");
-        fs.unlinkSync(outputPath); // Hapus file sementara
       } catch (error) {
         console.error("Error membuat stiker:", error);
         await sock.sendMessage(from, {
