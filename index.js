@@ -148,7 +148,6 @@ ____________________________________`;
       }
     }
 
-    let range = 0
     // Inisialisasi permainan tebak angka
     if (messageText === '!tebak angka normal') {
 
@@ -156,11 +155,10 @@ ____________________________________`;
       gameState[from] = {
         answer: generateRandomNumber(),
         isPlaying: true,
+        range: 100,
         attempts: 5, // Tambahkan jumlah kesempatan
         startTime: Date.now(), // Catat waktu mulai
       };
-
-      range = 100
 
       await sock.sendMessage(from, {
         text:
@@ -175,11 +173,10 @@ ____________________________________`;
       gameState[from] = {
         answer: generateRandomNumberHard(),
         isPlaying: true,
+        range: 1000,
         attempts: 5, // Tambahkan jumlah kesempatan
         startTime: Date.now(), // Catat waktu mulai
       };
-
-      range = 1000
 
       await sock.sendMessage(from, {
         text:
@@ -220,7 +217,7 @@ ____________________________________`;
       }
 
       const guess = parseInt(messageText);
-      if (isNaN(guess) || guess < 1 || guess > range) {
+      if (isNaN(guess) || guess < 1 || guess > gameState[from].range) {
         await sock.sendMessage(from, {
           text: 'Ketik angka antara 1 dan 100, atau "stop" untuk menyerah.',
         });
