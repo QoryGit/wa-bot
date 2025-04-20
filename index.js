@@ -8,6 +8,8 @@ const {
 const express = require("express");
 const fetch = require("node-fetch"); // Pastikan node-fetch terinstal
 const app = express();
+const fs = require("fs");
+const sharp = require("sharp");
 
 // State untuk menyimpan permainan per pengguna
 const gameState = {};
@@ -72,6 +74,33 @@ async function connectToWhatsApp() {
     const isGroup = from.endsWith("@g.us");
     const sender = isGroup ? m.key.participant : m.key.remoteJid;
 
+    // Fitur membuat stiker
+    if (m.message.imageMessage) {
+      const buffer = await sock.downloadMediaMessage(m); // Unduh gambar
+      const outputPath = `./temp/sticker.webp`;
+
+      try {
+        // Konversi gambar menjadi stiker (webp)
+        await sharp(buffer)
+          .resize(512, 512, { fit: "contain" })
+          .webp({ quality: 80 })
+          .toFile(outputPath);
+
+        // Kirim stiker ke pengguna
+        const stickerBuffer = fs.readFileSync(outputPath);
+        await sock.sendMessage(from, { sticker: stickerBuffer });
+
+        // Hapus file sementara
+        fs.unlinkSync(outputPath);
+      } catch (error) {
+        console.error("Error membuat stiker:", error);
+        await sock.sendMessage(from, {
+          text: "Maaf, terjadi kesalahan saat membuat stiker.",
+        });
+      }
+      return;
+    }
+
     if (messageText === "!help") {
       const help =
         `___________________________________________________
@@ -82,6 +111,7 @@ Daftar Command Bot:
 !kalkulator [ekspresi] - Hitung ekspresi matematika
 !help - Tampilkan bantuan ini
 !tebak angka - tebak angka (1-100)
+Kirim gambar untuk membuat stiker
 ____________________________________________________`;
       await sock.sendMessage(from, { text: help });
     } else if (messageText === "!pencipta") {
