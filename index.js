@@ -13,7 +13,7 @@ const fs = require("fs");
 const sharp = require("sharp");
 const axios = require("axios"); // Pastikan di bagian atas file
 
-// State untuk menyimpan permainan per pengguna
+// Tambahkan di atas handler pesan
 const gameState = {};
 
 // Fungsi untuk menghasilkan angka acak
@@ -25,24 +25,6 @@ function generateRandomNumber() {
 app.get("/", (req, res) => {
   res.send("Bot is running!");
 });
-
-// Aktifkan server Express
-// app.listen(3000, () => {
-//   console.log("Server running on port 3000");
-
-//   // Multiple keepalive strategies
-//   setInterval(() => {
-//     console.log("Keepalive: Primary check");
-//     fetch("https://YOUR-REPL-NAME.repl.co").catch(console.error);
-//   }, 4 * 60 * 1000);
-
-//   setInterval(() => {
-//     console.log("Keepalive: Connection check");
-//     if (sock?.user) {
-//       console.log("Bot status: Connected as", sock.user.id);
-//     }
-//   }, 5 * 60 * 1000);
-// });
 
 const { format } = require("path");
 const P = require("pino");
@@ -172,127 +154,32 @@ _____________________________________________`;
     }
     // Inisialisasi permainan tebak angka
     else if (messageText === '!tebak angka') {
-      // Inisialisasi permainan
+      if (gameState[from]?.isPlaying) {
+        await sock.sendMessage(from, {
+          text: "Permainan sedang berlangsung. Gunakan 'stop' untuk menghentikan permainan."
+        });
+        return;
+      }
       gameState[from] = {
         answer: generateRandomNumber(),
         isPlaying: true,
-        attempts: 5, // Tambahkan jumlah kesempatan
-        startTime: Date.now(), // Catat waktu mulai
-      };
-
-      await sock.sendMessage(from, {
-        text:
-          `Permainan Tebak Angka dimulai!\n` +
-          `Tebak angka antara 1 dan 100.\n` +
-          `Kamu memiliki 5 kesempatan dan waktu 60 detik.\n` +
-          `Ketik angka tebakanmu, atau "stop" untuk menyerah.`,
-      });
-      return;
-    }
-
-    // Tangani tebakan atau perintah stop
-    if (gameState[from]?.isPlaying) {
-      const currentTime = Date.now();
-      const elapsedTime = (currentTime - gameState[from].startTime) / 1000; // Hitung waktu berlalu dalam detik
-
-      // Periksa apakah waktu sudah habis
-      if (elapsedTime > 60) {
-        const { answer } = gameState[from];
-        delete gameState[from];
-        await sock.sendMessage(from, {
-          text:
-            `Waktu habis! Permainan dihentikan.\n` +
-            `Angka yang benar adalah ${answer}.`,
-        });
-        return;
-      }
-
-      if (messageText === 'stop') {
-        const { answer } = gameState[from];
-        delete gameState[from];
-        await sock.sendMessage(from, {
-          text:
-            `Permainan dihentikan.\n` +
-            `Angka yang benar adalah ${answer}.`,
-        });
-        return;
-      }
-
-      const guess = parseInt(messageText);
-      if (isNaN(guess) || guess < 1 || guess > 100) {
-        await sock.sendMessage(from, {
-          text: 'Ketik angka antara 1 dan 100, atau "stop" untuk menyerah.',
-        });
-        return;
-      }
-
-      const { answer, attempts } = gameState[from];
-
-      // Kurangi jumlah kesempatan
-      gameState[from].attempts -= 1;
-
-      if (guess === answer) {
-        delete gameState[from];
-        await sock.sendMessage(from, {
-          text:
-            `Selamat, kamu menang!\n` +
-            `Angka yang benar adalah ${answer}.`,
-        });
-      } else if (gameState[from].attempts <= 0) {
-        delete gameState[from];
-        await sock.sendMessage(from, {
-          text:
-            `Kesempatan habis! Permainan dihentikan.\n` +
-            `Angka yang benar adalah ${answer}.`,
-        });
-      } else if (guess > answer) {
-        await sock.sendMessage(from, {
-          text: `Tebakanmu terlalu tinggi! Coba lagi.\n` +
-            `Kesempatan tersisa: ${gameState[from].attempts}.`,
-        });
-      } else {
-        await sock.sendMessage(from, {
-          text: `Tebakanmu terlalu rendah! Coba lagi.\n` +
-            `Kesempatan tersisa: ${gameState[from].attempts}.`,
-        });
-      }
-      return;
-    }
-
-    // Handler untuk permainan tebak angka
-    if (messageText === "!main tebak") {
-      if (gameState[from]) {
-        await sock.sendMessage(from, {
-          text: "Permainan sedang berlangsung. Gunakan 'stop' untuk menghentikan permainan.",
-        });
-        return;
-      }
-
-      // Inisialisasi permainan baru
-      gameState[from] = {
-        answer: generateRandomNumber(),
         attempts: 5,
         startTime: Date.now(),
-        isPlaying: true,
-        lastProcessedId: "", // Tambahkan ini untuk mencegah looping
+        lastMessageId: null // untuk tracking anti-loop
       };
-
       await sock.sendMessage(from, {
-        text: "Permainan Tebak Angka dimulai!\n" +
-          "Tebak angka antara 1 dan 100.\n" +
-          "Kamu memiliki 5 kesempatan dan waktu 60 detik.\n" +
-          "Ketik angka tebakanmu, atau 'stop' untuk menyerah."
+        text: `Permainan Tebak Angka dimulai!\nTebak angka antara 1 dan 100.\nKamu memiliki 5 kesempatan dan waktu 60 detik.\nKetik angka tebakanmu, atau "stop" untuk menyerah.`
       });
       return;
     }
 
-    // Handle tebakan pemain
+    // Handler tebakan angka
     if (gameState[from]?.isPlaying) {
-      // Cegah looping dengan memeriksa ID pesan terakhir
-      if (gameState[from].lastProcessedId === m.key.id) {
+      // Cegah looping: hanya proses pesan baru
+      if (gameState[from].lastMessageId === m.key.id) {
         return;
       }
-      gameState[from].lastProcessedId = m.key.id;
+      gameState[from].lastMessageId = m.key.id;
 
       const currentTime = Date.now();
       const elapsedTime = (currentTime - gameState[from].startTime) / 1000;
@@ -301,7 +188,7 @@ _____________________________________________`;
         const { answer } = gameState[from];
         delete gameState[from];
         await sock.sendMessage(from, {
-          text: `Waktu habis!\nAngka yang benar adalah ${answer}.`
+          text: `Waktu habis! Permainan dihentikan.\nAngka yang benar adalah ${answer}.`
         });
         return;
       }
@@ -342,6 +229,7 @@ _____________________________________________`;
           text: `Angka ${guess} ${hint}!\nKesempatan tersisa: ${gameState[from].attempts}`
         });
       }
+      return;
     }
 
     if (messageText === "!tagall" && isGroup) {
@@ -385,6 +273,7 @@ _____________________________________________`;
         const answer = response.data.choices[0].message.content.trim();
         await sock.sendMessage(from, { text: answer });
       } catch (err) {
+        console.error("ChatGPT error:", err.response ? err.response.data : err.message);
         await sock.sendMessage(from, { text: "Gagal menghubungi ChatGPT." });
       }
       return;
