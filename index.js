@@ -4,6 +4,7 @@ const {
   default: makeWASocket,
   DisconnectReason,
   useMultiFileAuthState,
+  downloadMediaMessage, // Tambahkan ini di bagian atas
 } = require("@whiskeysockets/baileys");
 const express = require("express");
 const fetch = require("node-fetch"); // Pastikan node-fetch terinstal
@@ -79,6 +80,7 @@ async function connectToWhatsApp() {
       console.log("Pesan gambar diterima.");
 
       try {
+        // Unduh gambar menggunakan fungsi downloadMediaMessage
         const buffer = await downloadMediaMessage(m, "buffer", {}, { logger: P({ level: "silent" }) });
         console.log("Gambar berhasil diunduh:", buffer ? "Ya" : "Tidak");
 
