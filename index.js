@@ -56,6 +56,9 @@ async function connectToWhatsApp() {
     logger: P({ level: "silent" }),
   });
 
+  // Tambahkan state untuk menyimpan ID pesan yang sudah diproses
+  const processedMessages = new Set();
+
   // Listen for messages
   sock.ev.on("messages.upsert", async ({ messages, type }) => {
     const m = messages[0];
@@ -72,6 +75,12 @@ async function connectToWhatsApp() {
       .toLowerCase();
 
     const from = m.key.remoteJid;
+
+    // Cegah looping: Abaikan pesan yang sudah diproses
+    if (processedMessages.has(m.key.id)) {
+      return;
+    }
+    processedMessages.add(m.key.id);
 
     // Cegah looping: Abaikan pesan dari bot sendiri kecuali itu adalah perintah atau permainan tebak angka
     if (m.key.fromMe && !messageText.startsWith("!") && !gameState[from]?.isPlaying) {
