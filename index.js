@@ -77,19 +77,21 @@ async function connectToWhatsApp() {
     // Fitur membuat stiker
     if (m.message.imageMessage) {
       console.log("Pesan gambar diterima.");
-      const buffer = await sock.downloadMediaMessage(m); // Unduh gambar
-      console.log("Gambar berhasil diunduh:", buffer ? "Ya" : "Tidak");
-
-      if (!buffer) {
-        await sock.sendMessage(from, {
-          text: "Maaf, terjadi kesalahan saat mengunduh gambar.",
-        });
-        return;
-      }
-
-      const outputPath = `./temp/sticker.webp`;
 
       try {
+        // Unduh gambar menggunakan fungsi downloadMediaMessage
+        const buffer = await downloadMediaMessage(m, "buffer", {}, { logger: P({ level: "silent" }) });
+        console.log("Gambar berhasil diunduh:", buffer ? "Ya" : "Tidak");
+
+        if (!buffer) {
+          await sock.sendMessage(from, {
+            text: "Maaf, terjadi kesalahan saat mengunduh gambar.",
+          });
+          return;
+        }
+
+        const outputPath = `./temp/sticker.webp`;
+
         console.log("Memproses gambar...");
         await sharp(buffer)
           .resize(512, 512, { fit: "contain" })
