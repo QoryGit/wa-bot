@@ -12,10 +12,8 @@ const app = express();
 const fs = require("fs");
 const sharp = require("sharp");
 
-// Modifikasi state di bagian atas file
+// State untuk menyimpan permainan per pengguna
 const gameState = {};
-const processedMessages = new Set();
-const lastProcessedGuess = new Map();
 
 // Fungsi untuk menghasilkan angka acak
 function generateRandomNumber() {
@@ -58,9 +56,6 @@ async function connectToWhatsApp() {
     logger: P({ level: "silent" }),
   });
 
-  // Tambahkan state untuk menyimpan ID pesan yang sudah diproses
-  // const processedMessages = new Set();
-
   // Listen for messages
   sock.ev.on("messages.upsert", async ({ messages, type }) => {
     const m = messages[0];
@@ -78,19 +73,9 @@ async function connectToWhatsApp() {
 
     const from = m.key.remoteJid;
 
-    // Cegah looping dengan pengecekan ganda
-    if (processedMessages.has(m.key.id) || botResponses.has(m.key.id)) {
+    // Cegah looping: Abaikan pesan dari bot sendiri kecuali itu adalah perintah
+    if (m.key.fromMe && !messageText.startsWith("!")) {
       return;
-    }
-    processedMessages.add(m.key.id);
-
-    // Khusus untuk pesan dari bot sendiri
-    if (m.key.fromMe) {
-      // Hanya proses jika ini adalah bagian dari permainan yang sedang berlangsung
-      if (!gameState[from]?.isPlaying && !messageText.startsWith('!')) {
-        return;
-      }
-      botResponses.add(m.key.id);
     }
 
     const isGroup = from.endsWith("@g.us");
@@ -132,7 +117,7 @@ async function connectToWhatsApp() {
 
     if (messageText === "!help") {
       const help =
-        `____________________________________
+        `____________________________________________
 Daftar Command Bot:
 !pencipta - Pencipta bot
 !info - Info grup (khusus grup)
@@ -141,7 +126,7 @@ Daftar Command Bot:
 !help - Tampilkan bantuan ini
 !tebak angka - tebak angka (1-100)
 !stiker - Kirim gambar sebagai stiker
-______________________________________`;
+_____________________________________________`;
       await sock.sendMessage(from, { text: help });
     } else if (messageText === "!pencipta") {
       await sock.sendMessage(from, {
@@ -175,64 +160,93 @@ ______________________________________`;
         });
       }
     }
-    // Modifikasi bagian handler permainan tebak angka
+    // Inisialisasi permainan tebak angka
     else if (messageText === '!tebak angka') {
-      // Cek apakah sudah ada permainan yang berlangsung
-      if (gameState[from]) {
+      // Inisialisasi permainan
+      gameState[from] = {
+        answer: generateRandomNumber(),
+        isPlaying: true,
+        attempts: 5, // Tambahkan jumlah kesempatan
+        startTime: Date.now(), // Catat waktu mulai
+      };
+
+      await sock.sendMessage(from, {
+        text:
+          `Permainan Tebak Angka dimulai!\n` +
+          `Tebak angka antara 1 dan 100.\n` +
+          `Kamu memiliki 5 kesempatan dan waktu 60 detik.\n` +
+          `Ketik angka tebakanmu, atau "stop" untuk menyerah.`,
+      });
+      return;
+    }
+
+    // Tangani tebakan atau perintah stop
+    if (gameState[from]?.isPlaying) {
+      const currentTime = Date.now();
+      const elapsedTime = (currentTime - gameState[from].startTime) / 1000; // Hitung waktu berlalu dalam detik
+
+      // Periksa apakah waktu sudah habis
+      if (elapsedTime > 60) {
+        const { answer } = gameState[from];
+        delete gameState[from];
         await sock.sendMessage(from, {
-          text: "Permainan sedang berlangsung. Gunakan 'stop' untuk menghentikan permainan saat ini."
+          text:
+            `Waktu habis! Permainan dihentikan.\n` +
+            `Angka yang benar adalah ${answer}.`,
         });
         return;
       }
 
-      // Reset tracking untuk chat ini
-      lastProcessedGuess.delete(from);
+      if (messageText === 'stop') {
+        const { answer } = gameState[from];
+        delete gameState[from];
+        await sock.sendMessage(from, {
+          text:
+            `Permainan dihentikan.\n` +
+            `Angka yang benar adalah ${answer}.`,
+        });
+        return;
+      }
 
-      // Inisialisasi permainan baru
-      gameState[from] = {
-        answer: generateRandomNumber(),
-        isPlaying: true,
-        attempts: 5,
-        startTime: Date.now(),
-        lastMessageId: null,
-        lastGuess: null
-      };
+      const guess = parseInt(messageText);
+      if (isNaN(guess) || guess < 1 || guess > 100) {
+        await sock.sendMessage(from, {
+          text: 'Ketik angka antara 1 dan 100, atau "stop" untuk menyerah.',
+        });
+        return;
+      }
 
-      const response = await sock.sendMessage(from, {
-        text: `Permainan Tebak Angka dimulai!\nTebak angka antara 1 dan 100.\nKamu memiliki 5 kesempatan dan waktu 60 detik.\nKetik angka tebakanmu, atau "stop" untuk menyerah.`
-      });
+      const { answer, attempts } = gameState[from];
 
-      // Tandai pesan bot
-      botResponses.add(response.key.id);
+      // Kurangi jumlah kesempatan
+      gameState[from].attempts -= 1;
+
+      if (guess === answer) {
+        delete gameState[from];
+        await sock.sendMessage(from, {
+          text:
+            `Selamat, kamu menang!\n` +
+            `Angka yang benar adalah ${answer}.`,
+        });
+      } else if (gameState[from].attempts <= 0) {
+        delete gameState[from];
+        await sock.sendMessage(from, {
+          text:
+            `Kesempatan habis! Permainan dihentikan.\n` +
+            `Angka yang benar adalah ${answer}.`,
+        });
+      } else if (guess > answer) {
+        await sock.sendMessage(from, {
+          text: `Tebakanmu terlalu tinggi! Coba lagi.\n` +
+            `Kesempatan tersisa: ${gameState[from].attempts}.`,
+        });
+      } else {
+        await sock.sendMessage(from, {
+          text: `Tebakanmu terlalu rendah! Coba lagi.\n` +
+            `Kesempatan tersisa: ${gameState[from].attempts}.`,
+        });
+      }
       return;
-    }
-
-    // Modifikasi bagian handler tebakan
-    if (gameState[from]?.isPlaying) {
-      // Skip jika pesan adalah dari bot atau sudah diproses
-      if (botResponses.has(m.key.id) || processedMessages.has(m.key.id)) {
-        return;
-      }
-
-      // Cek duplikasi tebakan
-      if (gameState[from].lastGuess === messageText) {
-        return;
-      }
-
-      // Update tracking
-      gameState[from].lastGuess = messageText;
-      processedMessages.add(m.key.id);
-
-      const currentTime = Date.now();
-      const elapsedTime = (currentTime - gameState[from].startTime) / 1000;
-
-      // ... rest of your existing game logic ...
-
-      // Tandai respon bot
-      const response = await sock.sendMessage(from, {
-        text: "Tebakanmu telah diterima. Lanjutkan permainan!"
-      });
-      botResponses.add(response.key.id);
     }
   });
 
@@ -269,12 +283,5 @@ ______________________________________`;
   // Listen for creds update
   sock.ev.on("creds.update", saveCreds);
 }
-
-// Tambahkan pembersihan cache yang lebih agresif
-setInterval(() => {
-  processedMessages.clear();
-  botResponses.clear();
-  lastProcessedGuess.clear();
-}, 60 * 1000); // Bersihkan setiap 1 menit
 
 connectToWhatsApp();
