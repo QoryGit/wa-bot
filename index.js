@@ -132,7 +132,7 @@ async function connectToWhatsApp() {
 
     if (messageText === "!help") {
       const help =
-        `____________________________________________
+        `____________________________________
 Daftar Command Bot:
 !pencipta - Pencipta bot
 !info - Info grup (khusus grup)
@@ -141,7 +141,7 @@ Daftar Command Bot:
 !help - Tampilkan bantuan ini
 !tebak angka - tebak angka (1-100)
 !stiker - Kirim gambar sebagai stiker
-_____________________________________________`;
+______________________________________`;
       await sock.sendMessage(from, { text: help });
     } else if (messageText === "!pencipta") {
       await sock.sendMessage(from, {
@@ -230,7 +230,7 @@ _____________________________________________`;
 
       // Tandai respon bot
       const response = await sock.sendMessage(from, {
-        text: /* your message here */ 
+        text: "Tebakanmu telah diterima. Lanjutkan permainan!"
       });
       botResponses.add(response.key.id);
     }
