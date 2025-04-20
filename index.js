@@ -20,28 +20,14 @@ function generateRandomNumber() {
   return Math.floor(Math.random() * 100) + 1;
 }
 
+function generateRandomNumberHard() {
+  return Math.floor(Math.random() * 1000) + 1;
+}
+
 // Endpoint untuk UptimeRobot
 app.get("/", (req, res) => {
   res.send("Bot is running!");
 });
-
-// Aktifkan server Express
-// app.listen(3000, () => {
-//   console.log("Server running on port 3000");
-
-//   // Multiple keepalive strategies
-//   setInterval(() => {
-//     console.log("Keepalive: Primary check");
-//     fetch("https://YOUR-REPL-NAME.repl.co").catch(console.error);
-//   }, 4 * 60 * 1000);
-
-//   setInterval(() => {
-//     console.log("Keepalive: Connection check");
-//     if (sock?.user) {
-//       console.log("Bot status: Connected as", sock.user.id);
-//     }
-//   }, 5 * 60 * 1000);
-// });
 
 const { format } = require("path");
 const P = require("pino");
@@ -117,7 +103,7 @@ async function connectToWhatsApp() {
 
     if (messageText === "!help") {
       const help =
-        `_________________________________
+        `____________________________________
 Daftar Command Bot:
 !pencipta - Pencipta bot
 !info - Info grup (khusus grup)
@@ -127,11 +113,11 @@ Daftar Command Bot:
 !help - Tampilkan bantuan ini
 !tebak angka - tebak angka (1-100)
 !stiker - Kirim gambar sebagai stiker
-_____________________________________`;
+____________________________________`;
       await sock.sendMessage(from, { text: help });
     } else if (messageText === "!pencipta") {
       await sock.sendMessage(from, {
-        text: "rizki",
+        text: "Rizki",
       });
     } else if (messageText === "!quote") {
       try {
@@ -162,7 +148,8 @@ _____________________________________`;
       }
     }
     // Inisialisasi permainan tebak angka
-    else if (messageText === '!tebak angka') {
+    else if (messageText === '!tebak angka normal') {
+
       // Inisialisasi permainan
       gameState[from] = {
         answer: generateRandomNumber(),
@@ -175,6 +162,23 @@ _____________________________________`;
         text:
           `Permainan Tebak Angka dimulai!\n` +
           `Tebak angka antara 1 dan 100.\n` +
+          `Kamu memiliki 5 kesempatan dan waktu 60 detik.\n` +
+          `Ketik angka tebakanmu, atau "stop" untuk menyerah.`,
+      });
+      return;
+    } else if (messageText === "!tebak angka hard") {
+      // Inisialisasi permainan
+      gameState[from] = {
+        answer: generateRandomNumberHard(),
+        isPlaying: true,
+        attempts: 5, // Tambahkan jumlah kesempatan
+        startTime: Date.now(), // Catat waktu mulai
+      };
+
+      await sock.sendMessage(from, {
+        text:
+          `Permainan Tebak Angka dimulai!\n` +
+          `Tebak angka antara 1 dan 1000.\n` +
           `Kamu memiliki 5 kesempatan dan waktu 60 detik.\n` +
           `Ketik angka tebakanmu, atau "stop" untuk menyerah.`,
       });
