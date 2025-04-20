@@ -117,16 +117,17 @@ async function connectToWhatsApp() {
 
     if (messageText === "!help") {
       const help =
-        `____________________________________________
+        `_________________________________
 Daftar Command Bot:
 !pencipta - Pencipta bot
 !info - Info grup (khusus grup)
+!tagall - Tag semua anggota grup (khusus grup)
 !quote - Tampilkan quote random
 !kalkulator [ekspresi] - Hitung ekspresi matematika
 !help - Tampilkan bantuan ini
 !tebak angka - tebak angka (1-100)
 !stiker - Kirim gambar sebagai stiker
-_____________________________________________`;
+_____________________________________`;
       await sock.sendMessage(from, { text: help });
     } else if (messageText === "!pencipta") {
       await sock.sendMessage(from, {
@@ -245,6 +246,21 @@ _____________________________________________`;
           text: `Tebakanmu terlalu rendah! Coba lagi.\n` +
             `Kesempatan tersisa: ${gameState[from].attempts}.`,
         });
+      }
+      return;
+    }
+
+    if (messageText === "!tagall" && isGroup) {
+      try {
+        const groupMetadata = await sock.groupMetadata(from);
+        const participants = groupMetadata.participants.map(p => p.id);
+        const mentionText = participants.map(id => `@${id.split("@")[0]}`).join(" ");
+        await sock.sendMessage(from, {
+          text: `Tag semua anggota:\n${mentionText}`,
+          mentions: participants
+        });
+      } catch (err) {
+        await sock.sendMessage(from, { text: "Gagal mengambil data grup atau tag anggota." });
       }
       return;
     }
