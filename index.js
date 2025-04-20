@@ -111,7 +111,7 @@ Daftar Command Bot:
 !quote - Tampilkan quote random
 !kalkulator [ekspresi] - Hitung ekspresi matematika
 !help - Tampilkan bantuan ini
-!tebak angka - tebak angka (1-100)
+!tebak angka [mode] - normal dan hard
 !stiker - Kirim gambar sebagai stiker
 ____________________________________`;
       await sock.sendMessage(from, { text: help });
@@ -147,8 +147,10 @@ ____________________________________`;
         });
       }
     }
+
+    let range = 0
     // Inisialisasi permainan tebak angka
-    else if (messageText === '!tebak angka normal') {
+    if (messageText === '!tebak angka normal') {
 
       // Inisialisasi permainan
       gameState[from] = {
@@ -157,6 +159,8 @@ ____________________________________`;
         attempts: 5, // Tambahkan jumlah kesempatan
         startTime: Date.now(), // Catat waktu mulai
       };
+
+      range = 100
 
       await sock.sendMessage(from, {
         text:
@@ -174,6 +178,8 @@ ____________________________________`;
         attempts: 5, // Tambahkan jumlah kesempatan
         startTime: Date.now(), // Catat waktu mulai
       };
+
+      range = 1000
 
       await sock.sendMessage(from, {
         text:
@@ -214,7 +220,7 @@ ____________________________________`;
       }
 
       const guess = parseInt(messageText);
-      if (isNaN(guess) || guess < 1 || guess > 100) {
+      if (isNaN(guess) || guess < 1 || guess > range) {
         await sock.sendMessage(from, {
           text: 'Ketik angka antara 1 dan 100, atau "stop" untuk menyerah.',
         });
