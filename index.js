@@ -61,7 +61,6 @@ async function connectToWhatsApp() {
     const m = messages[0];
 
     if (!m.message) return;
-    if (m.key.fromMe) return;
 
     const messageText = (
       m.message?.conversation ||
@@ -71,7 +70,14 @@ async function connectToWhatsApp() {
     )
       .trim()
       .toLowerCase();
+
     const from = m.key.remoteJid;
+
+    // Cegah looping: Abaikan pesan dari bot sendiri kecuali itu adalah perintah
+    if (m.key.fromMe && !messageText.startsWith("!")) {
+      return;
+    }
+
     const isGroup = from.endsWith("@g.us");
     const sender = isGroup ? m.key.participant : m.key.remoteJid;
 
@@ -119,7 +125,7 @@ Daftar Command Bot:
 !kalkulator [ekspresi] - Hitung ekspresi matematika
 !help - Tampilkan bantuan ini
 !tebak angka - tebak angka (1-100)
-Kirim gambar untuk membuat stiker
+!stiker - Kirim gambar sebagai stiker
 _____________________________________________`;
       await sock.sendMessage(from, { text: help });
     } else if (messageText === "!pencipta") {
