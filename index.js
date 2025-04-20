@@ -56,6 +56,9 @@ async function connectToWhatsApp() {
     logger: P({ level: "silent" }),
   });
 
+  // Tambahkan state untuk menyimpan ID pesan yang sudah diproses
+  const processedMessages = new Set();
+
   // Listen for messages
   sock.ev.on("messages.upsert", async ({ messages, type }) => {
     const m = messages[0];
@@ -73,8 +76,14 @@ async function connectToWhatsApp() {
 
     const from = m.key.remoteJid;
 
-    // Cegah looping: Abaikan pesan dari bot sendiri kecuali itu adalah perintah
-    if (m.key.fromMe && !messageText.startsWith("!")) {
+    // Cegah looping: Abaikan pesan yang sudah diproses
+    if (processedMessages.has(m.key.id)) {
+      return;
+    }
+    processedMessages.add(m.key.id);
+
+    // Cegah looping: Abaikan pesan dari bot sendiri kecuali itu adalah perintah atau permainan tebak angka
+    if (m.key.fromMe && !messageText.startsWith("!") && !gameState[from]?.isPlaying) {
       return;
     }
 
@@ -247,6 +256,91 @@ _____________________________________________`;
         });
       }
       return;
+    }
+
+    // Handler untuk permainan tebak angka
+    if (messageText === "!main tebak") {
+      if (gameState[from]) {
+        await sock.sendMessage(from, {
+          text: "Permainan sedang berlangsung. Gunakan 'stop' untuk menghentikan permainan.",
+        });
+        return;
+      }
+
+      // Inisialisasi permainan baru
+      gameState[from] = {
+        answer: generateRandomNumber(),
+        attempts: 5,
+        startTime: Date.now(),
+        isPlaying: true,
+        lastProcessedId: "", // Tambahkan ini untuk mencegah looping
+      };
+
+      await sock.sendMessage(from, {
+        text: "Permainan Tebak Angka dimulai!\n" +
+          "Tebak angka antara 1 dan 100.\n" +
+          "Kamu memiliki 5 kesempatan dan waktu 60 detik.\n" +
+          "Ketik angka tebakanmu, atau 'stop' untuk menyerah."
+      });
+      return;
+    }
+
+    // Handle tebakan pemain
+    if (gameState[from]?.isPlaying) {
+      // Cegah looping dengan memeriksa ID pesan terakhir
+      if (gameState[from].lastProcessedId === m.key.id) {
+        return;
+      }
+      gameState[from].lastProcessedId = m.key.id;
+
+      const currentTime = Date.now();
+      const elapsedTime = (currentTime - gameState[from].startTime) / 1000;
+
+      if (elapsedTime > 60) {
+        const { answer } = gameState[from];
+        delete gameState[from];
+        await sock.sendMessage(from, {
+          text: `Waktu habis!\nAngka yang benar adalah ${answer}.`
+        });
+        return;
+      }
+
+      if (messageText === "stop") {
+        const { answer } = gameState[from];
+        delete gameState[from];
+        await sock.sendMessage(from, {
+          text: `Permainan dihentikan.\nAngka yang benar adalah ${answer}.`
+        });
+        return;
+      }
+
+      const guess = parseInt(messageText);
+      if (isNaN(guess) || guess < 1 || guess > 100) {
+        await sock.sendMessage(from, {
+          text: 'Masukkan angka antara 1 dan 100, atau ketik "stop" untuk menyerah.'
+        });
+        return;
+      }
+
+      const { answer, attempts } = gameState[from];
+      gameState[from].attempts--;
+
+      if (guess === answer) {
+        delete gameState[from];
+        await sock.sendMessage(from, {
+          text: `🎉 Selamat! Kamu berhasil menebak angka ${answer}!`
+        });
+      } else if (gameState[from].attempts <= 0) {
+        delete gameState[from];
+        await sock.sendMessage(from, {
+          text: `Kesempatan habis!\nAngka yang benar adalah ${answer}.`
+        });
+      } else {
+        const hint = guess > answer ? "terlalu tinggi" : "terlalu rendah";
+        await sock.sendMessage(from, {
+          text: `Angka ${guess} ${hint}!\nKesempatan tersisa: ${gameState[from].attempts}`
+        });
+      }
     }
   });
 
