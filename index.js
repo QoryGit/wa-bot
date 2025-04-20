@@ -20,28 +20,28 @@ app.get("/", (req, res) => {
   res.send("Bot is running!");
 });
 
-app.listen(3000, () => {
-  console.log("Server running on port 3000");
+// app.listen(3000, () => {
+//   console.log("Server running on port 3000");
 
-  // Multiple keepalive strategies
-  setInterval(
-    () => {
-      console.log("Keepalive: Primary check");
-      fetch("https://YOUR-REPL-NAME.repl.co").catch(console.error);
-    },
-    4 * 60 * 1000,
-  );
+//   // Multiple keepalive strategies
+//   setInterval(
+//     () => {
+//       console.log("Keepalive: Primary check");
+//       fetch("https://YOUR-REPL-NAME.repl.co").catch(console.error);
+//     },
+//     4 * 60 * 1000,
+//   );
 
-  setInterval(
-    () => {
-      console.log("Keepalive: Connection check");
-      if (sock?.user) {
-        console.log("Bot status: Connected as", sock.user.id);
-      }
-    },
-    5 * 60 * 1000,
-  );
-});
+//   setInterval(
+//     () => {
+//       console.log("Keepalive: Connection check");
+//       if (sock?.user) {
+//         console.log("Bot status: Connected as", sock.user.id);
+//       }
+//     },
+//     5 * 60 * 1000,
+//   );
+// });
 const { format } = require("path");
 const P = require("pino");
 const qrcode = require("qrcode-terminal");
@@ -143,7 +143,7 @@ async function connectToWhatsApp() {
         });
       }
     }
-        // Perintah untuk memulai permainan: "main tebak"
+    // Perintah untuk memulai permainan: "main tebak"
     else if (messageText === '!main tebak') {
       // Inisialisasi permainan
       gameState[from] = {
