@@ -99,7 +99,7 @@ async function connectToWhatsApp() {
 
         console.time("Proses gambar");
         const stickerBuffer = await sharp(buffer)
-          .resize(512, 512, { fit: "contain" }) // Batasi ukuran gambar
+          .resize(512, 512, { fit: "fill" }) // Batasi ukuran gambar
           .webp({ quality: 50 }) // Kurangi kualitas untuk mempercepat proses
           .toBuffer();
         console.timeEnd("Proses gambar");
