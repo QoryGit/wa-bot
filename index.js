@@ -76,7 +76,7 @@ async function connectToWhatsApp() {
     const sender = isGroup ? m.key.participant : m.key.remoteJid;
 
     // Fitur membuat stiker
-    if (m.message.imageMessage) {
+    if (messageText === '!stiker' && m.message.imageMessage) {
       console.log("Pesan gambar diterima.");
 
       try {
