@@ -76,22 +76,32 @@ async function connectToWhatsApp() {
 
     // Fitur membuat stiker
     if (m.message.imageMessage) {
+      console.log("Pesan gambar diterima.");
       const buffer = await sock.downloadMediaMessage(m); // Unduh gambar
+      console.log("Gambar berhasil diunduh:", buffer ? "Ya" : "Tidak");
+
+      if (!buffer) {
+        await sock.sendMessage(from, {
+          text: "Maaf, terjadi kesalahan saat mengunduh gambar.",
+        });
+        return;
+      }
+
       const outputPath = `./temp/sticker.webp`;
 
       try {
-        // Konversi gambar menjadi stiker (webp)
+        console.log("Memproses gambar...");
         await sharp(buffer)
           .resize(512, 512, { fit: "contain" })
           .webp({ quality: 80 })
           .toFile(outputPath);
 
-        // Kirim stiker ke pengguna
+        console.log("Gambar berhasil dikonversi menjadi stiker.");
         const stickerBuffer = fs.readFileSync(outputPath);
         await sock.sendMessage(from, { sticker: stickerBuffer });
 
-        // Hapus file sementara
-        fs.unlinkSync(outputPath);
+        console.log("Stiker berhasil dikirim.");
+        fs.unlinkSync(outputPath); // Hapus file sementara
       } catch (error) {
         console.error("Error membuat stiker:", error);
         await sock.sendMessage(from, {
@@ -103,7 +113,7 @@ async function connectToWhatsApp() {
 
     if (messageText === "!help") {
       const help =
-        `___________________________________________________
+        `____________________________________________
 Daftar Command Bot:
 !pencipta - Pencipta bot
 !info - Info grup (khusus grup)
@@ -112,7 +122,7 @@ Daftar Command Bot:
 !help - Tampilkan bantuan ini
 !tebak angka - tebak angka (1-100)
 Kirim gambar untuk membuat stiker
-____________________________________________________`;
+_____________________________________________`;
       await sock.sendMessage(from, { text: help });
     } else if (messageText === "!pencipta") {
       await sock.sendMessage(from, {
