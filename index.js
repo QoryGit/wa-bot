@@ -11,6 +11,7 @@ const fetch = require("node-fetch"); // Pastikan node-fetch terinstal
 const app = express();
 const fs = require("fs");
 const sharp = require("sharp");
+const axios = require("axios"); // Pastikan di bagian atas file
 
 // State untuk menyimpan permainan per pengguna
 const gameState = {};
@@ -354,6 +355,37 @@ _____________________________________________`;
         });
       } catch (err) {
         await sock.sendMessage(from, { text: "Gagal mengambil data grup atau tag anggota." });
+      }
+      return;
+    }
+
+    if (messageText.startsWith("!ai ")) {
+      const prompt = messageText.replace("!ai ", "").trim();
+      if (!prompt) {
+        await sock.sendMessage(from, { text: "Silakan masukkan pertanyaan setelah !ai" });
+        return;
+      }
+
+      await sock.sendMessage(from, { text: "⏳ Sedang memproses jawaban dari ChatGPT..." });
+
+      try {
+        const response = await axios.post(
+          "https://api.openai.com/v1/chat/completions",
+          {
+            model: "gpt-3.5-turbo",
+            messages: [{ role: "user", content: prompt }]
+          },
+          {
+            headers: {
+              "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+              "Content-Type": "application/json"
+            }
+          }
+        );
+        const answer = response.data.choices[0].message.content.trim();
+        await sock.sendMessage(from, { text: answer });
+      } catch (err) {
+        await sock.sendMessage(from, { text: "Gagal menghubungi ChatGPT." });
       }
       return;
     }
