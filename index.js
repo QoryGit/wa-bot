@@ -73,15 +73,16 @@ async function connectToWhatsApp() {
     const sender = isGroup ? m.key.participant : m.key.remoteJid;
 
     if (messageText === "!help") {
-      const help = `_____________________________________________________
-                    Daftar Command Bot:
-                    !pencipta - Pencipta bot
-                    !info - Info grup (khusus grup)
-                    !quote - Tampilkan quote random
-                    !kalkulator [ekspresi] - Hitung ekspresi matematika
-                    !help - Tampilkan bantuan ini
-                    !tebak angka - Mulai permainan tebak angka (1-100)
-                    ______________________________________________________`;
+      const help =
+        `___________________________________________________
+Daftar Command Bot:
+!pencipta - Pencipta bot
+!info - Info grup (khusus grup)
+!quote - Tampilkan quote random
+!kalkulator [ekspresi] - Hitung ekspresi matematika
+!help - Tampilkan bantuan ini
+!tebak angka - tebak angka (1-100)
+____________________________________________________`;
       await sock.sendMessage(from, { text: help });
     } else if (messageText === "!pencipta") {
       await sock.sendMessage(from, {
