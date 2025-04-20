@@ -15,6 +15,10 @@ const sharp = require("sharp");
 // State untuk menyimpan permainan per pengguna
 const gameState = {};
 
+// Tambahkan di bagian atas file, setelah deklarasi gameState
+const processedMessages = new Set();
+const botResponses = new Set();
+
 // Fungsi untuk menghasilkan angka acak
 function generateRandomNumber() {
   return Math.floor(Math.random() * 100) + 1;
@@ -57,7 +61,7 @@ async function connectToWhatsApp() {
   });
 
   // Tambahkan state untuk menyimpan ID pesan yang sudah diproses
-  const processedMessages = new Set();
+  // const processedMessages = new Set();
 
   // Listen for messages
   sock.ev.on("messages.upsert", async ({ messages, type }) => {
@@ -76,15 +80,19 @@ async function connectToWhatsApp() {
 
     const from = m.key.remoteJid;
 
-    // Cegah looping: Abaikan pesan yang sudah diproses
-    if (processedMessages.has(m.key.id)) {
+    // Cegah looping dengan pengecekan ganda
+    if (processedMessages.has(m.key.id) || botResponses.has(m.key.id)) {
       return;
     }
     processedMessages.add(m.key.id);
 
-    // Cegah looping: Abaikan pesan dari bot sendiri kecuali itu adalah perintah atau permainan tebak angka
-    if (m.key.fromMe && !messageText.startsWith("!") && !gameState[from]?.isPlaying) {
-      return;
+    // Khusus untuk pesan dari bot sendiri
+    if (m.key.fromMe) {
+      // Hanya proses jika ini adalah bagian dari permainan yang sedang berlangsung
+      if (!gameState[from]?.isPlaying && !messageText.startsWith('!')) {
+        return;
+      }
+      botResponses.add(m.key.id);
     }
 
     const isGroup = from.endsWith("@g.us");
@@ -194,6 +202,12 @@ _____________________________________________`;
       const currentTime = Date.now();
       const elapsedTime = (currentTime - gameState[from].startTime) / 1000; // Hitung waktu berlalu dalam detik
 
+      // Tambahkan pengecekan untuk mencegah looping
+      if (gameState[from].lastProcessedId === m.key.id) {
+        return;
+      }
+      gameState[from].lastProcessedId = m.key.id;
+
       // Periksa apakah waktu sudah habis
       if (elapsedTime > 60) {
         const { answer } = gameState[from];
@@ -292,5 +306,11 @@ _____________________________________________`;
   // Listen for creds update
   sock.ev.on("creds.update", saveCreds);
 }
+
+// Tambahkan pembersihan cache setiap interval waktu
+setInterval(() => {
+  processedMessages.clear();
+  botResponses.clear();
+}, 5 * 60 * 1000); // Bersihkan setiap 5 menit
 
 connectToWhatsApp();
