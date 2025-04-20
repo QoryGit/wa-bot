@@ -342,6 +342,21 @@ _____________________________________________`;
         });
       }
     }
+
+    if (messageText === "!tagall" && isGroup) {
+      try {
+        const groupMetadata = await sock.groupMetadata(from);
+        const participants = groupMetadata.participants.map(p => p.id);
+        const mentionText = participants.map(id => `@${id.split("@")[0]}`).join(" ");
+        await sock.sendMessage(from, {
+          text: `Tag semua anggota:\n${mentionText}`,
+          mentions: participants
+        });
+      } catch (err) {
+        await sock.sendMessage(from, { text: "Gagal mengambil data grup atau tag anggota." });
+      }
+      return;
+    }
   });
 
   // Listen for connection updates
