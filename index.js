@@ -1,10 +1,12 @@
 global.crypto = require("crypto");
+require("dotenv").config(); // Tambahkan dotenv untuk variabel lingkungan
 const {
   default: makeWASocket,
   DisconnectReason,
   useMultiFileAuthState,
 } = require("@whiskeysockets/baileys");
 const express = require("express");
+const fetch = require("node-fetch"); // Pastikan node-fetch terinstal
 const app = express();
 
 // State untuk menyimpan permainan per pengguna
@@ -20,28 +22,24 @@ app.get("/", (req, res) => {
   res.send("Bot is running!");
 });
 
-// app.listen(3000, () => {
-//   console.log("Server running on port 3000");
+// Aktifkan server Express
+app.listen(3000, () => {
+  console.log("Server running on port 3000");
 
-//   // Multiple keepalive strategies
-//   setInterval(
-//     () => {
-//       console.log("Keepalive: Primary check");
-//       fetch("https://YOUR-REPL-NAME.repl.co").catch(console.error);
-//     },
-//     4 * 60 * 1000,
-//   );
+  // Multiple keepalive strategies
+  setInterval(() => {
+    console.log("Keepalive: Primary check");
+    fetch("https://YOUR-REPL-NAME.repl.co").catch(console.error);
+  }, 4 * 60 * 1000);
 
-//   setInterval(
-//     () => {
-//       console.log("Keepalive: Connection check");
-//       if (sock?.user) {
-//         console.log("Bot status: Connected as", sock.user.id);
-//       }
-//     },
-//     5 * 60 * 1000,
-//   );
-// });
+  setInterval(() => {
+    console.log("Keepalive: Connection check");
+    if (sock?.user) {
+      console.log("Bot status: Connected as", sock.user.id);
+    }
+  }, 5 * 60 * 1000);
+});
+
 const { format } = require("path");
 const P = require("pino");
 const qrcode = require("qrcode-terminal");
@@ -132,43 +130,47 @@ async function connectToWhatsApp() {
       const city = messageText.slice(7);
       try {
         const response = await fetch(
-          `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=YOUR_API_KEY&units=metric`,
+          `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${process.env.OPENWEATHER_API_KEY}&units=metric`,
         );
+        if (!response.ok) {
+          throw new Error("Kota tidak ditemukan");
+        }
         const data = await response.json();
         const weather = `Cuaca di ${city}:\nSuhu: ${data.main.temp}°C\nKelembaban: ${data.main.humidity}%\nKondisi: ${data.weather[0].description}`;
         await sock.sendMessage(from, { text: weather });
       } catch (error) {
+        console.error("Weather error:", error);
         await sock.sendMessage(from, {
           text: "Maaf, tidak bisa mengambil info cuaca saat ini.",
         });
       }
     }
     // Perintah untuk memulai permainan: "main tebak"
-    else if (messageText === '!main tebak') {
+    else if (messageText === "!main tebak") {
       // Inisialisasi permainan
       gameState[from] = {
         answer: generateRandomNumber(),
-        isPlaying: true
+        isPlaying: true,
       };
 
       await sock.sendMessage(from, {
         text:
           `Permainan Tebak Angka dimulai!\n` +
           `Tebak angka antara 1 dan 100.\n` +
-          `Ketik angka tebakanmu, atau "stop" untuk menyerah.`
+          `Ketik angka tebakanmu, atau "stop" untuk menyerah.`,
       });
       return;
     }
 
     // Tangani tebakan atau perintah stop
     if (gameState[from]?.isPlaying) {
-      if (messageText === 'stop') {
+      if (messageText === "stop") {
         const { answer } = gameState[from];
         delete gameState[from];
         await sock.sendMessage(from, {
           text:
             `Permainan dihentikan.\n` +
-            `Angka yang benar adalah ${answer}.`
+            `Angka yang benar adalah ${answer}.`,
         });
         return;
       }
@@ -176,7 +178,7 @@ async function connectToWhatsApp() {
       const guess = parseInt(messageText);
       if (isNaN(guess) || guess < 1 || guess > 100) {
         await sock.sendMessage(from, {
-          text: 'Ketik angka antara 1 dan 100, atau "stop" untuk menyerah.'
+          text: 'Ketik angka antara 1 dan 100, atau "stop" untuk menyerah.',
         });
         return;
       }
@@ -187,16 +189,19 @@ async function connectToWhatsApp() {
         await sock.sendMessage(from, {
           text:
             `Selamat, kamu menang!\n` +
-            `Angka yang benar adalah ${answer}.`
+            `Angka yang benar adalah ${answer}.`,
         });
       } else if (guess > answer) {
-        await sock.sendMessage(from, { text: `Tebakanmu terlalu tinggi! Coba lagi.` });
+        await sock.sendMessage(from, {
+          text: `Tebakanmu terlalu tinggi! Coba lagi.`,
+        });
       } else {
-        await sock.sendMessage(from, { text: `Tebakanmu terlalu rendah! Coba lagi.` });
+        await sock.sendMessage(from, {
+          text: `Tebakanmu terlalu rendah! Coba lagi.`,
+        });
       }
       return;
     }
-
   });
 
   // Listen for connection updates
