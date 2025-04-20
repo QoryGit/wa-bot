@@ -23,22 +23,22 @@ app.get("/", (req, res) => {
 });
 
 // Aktifkan server Express
-app.listen(3000, () => {
-  console.log("Server running on port 3000");
+// app.listen(3000, () => {
+//   console.log("Server running on port 3000");
 
-  // Multiple keepalive strategies
-  setInterval(() => {
-    console.log("Keepalive: Primary check");
-    fetch("https://YOUR-REPL-NAME.repl.co").catch(console.error);
-  }, 4 * 60 * 1000);
+//   // Multiple keepalive strategies
+//   setInterval(() => {
+//     console.log("Keepalive: Primary check");
+//     fetch("https://YOUR-REPL-NAME.repl.co").catch(console.error);
+//   }, 4 * 60 * 1000);
 
-  setInterval(() => {
-    console.log("Keepalive: Connection check");
-    if (sock?.user) {
-      console.log("Bot status: Connected as", sock.user.id);
-    }
-  }, 5 * 60 * 1000);
-});
+//   setInterval(() => {
+//     console.log("Keepalive: Connection check");
+//     if (sock?.user) {
+//       console.log("Bot status: Connected as", sock.user.id);
+//     }
+//   }, 5 * 60 * 1000);
+// });
 
 const { format } = require("path");
 const P = require("pino");
@@ -72,29 +72,17 @@ async function connectToWhatsApp() {
     const isGroup = from.endsWith("@g.us");
     const sender = isGroup ? m.key.participant : m.key.remoteJid;
 
-    if (messageText === "!ping") {
-      await sock.sendMessage(from, { text: "Pong!" });
-    } else if (messageText === "!hello") {
-      await sock.sendMessage(from, { text: "Hi!" });
-    } else if (messageText === "!info" && isGroup) {
-      const groupMetadata = await sock.groupMetadata(from);
-      const info = `Nama Grup: ${groupMetadata.subject}\nTotal Member: ${groupMetadata.participants.length}`;
-      await sock.sendMessage(from, { text: info });
-    } else if (messageText === "!help") {
-      const help = `Daftar Command Bot:
-!ping - Test bot
-!hello - Sapa bot
-!pencipta - Pencipta bot
-!info - Info grup (khusus grup)
-!time - Lihat waktu saat ini
-!quote - Tampilkan quote random
-!cuaca [kota] - Cek cuaca di kota tertentu
-!kalkulator [ekspresi] - Hitung ekspresi matematika
-!help - Tampilkan bantuan ini`;
+    if (messageText === "!help") {
+      const help = `_____________________________________________________
+                    Daftar Command Bot:
+                    !pencipta - Pencipta bot
+                    !info - Info grup (khusus grup)
+                    !quote - Tampilkan quote random
+                    !kalkulator [ekspresi] - Hitung ekspresi matematika
+                    !help - Tampilkan bantuan ini
+                    !tebak angka - Mulai permainan tebak angka (1-100)
+                    ______________________________________________________`;
       await sock.sendMessage(from, { text: help });
-    } else if (messageText === "!time") {
-      const time = new Date().toLocaleString("id-ID");
-      await sock.sendMessage(from, { text: `Waktu saat ini: ${time}` });
     } else if (messageText === "!pencipta") {
       await sock.sendMessage(from, {
         text: "rizki",
@@ -126,37 +114,22 @@ async function connectToWhatsApp() {
           text: "Maaf, ekspresi matematika tidak valid.",
         });
       }
-    } else if (messageText.startsWith("!cuaca ")) {
-      const city = messageText.slice(7);
-      try {
-        const response = await fetch(
-          `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${process.env.OPENWEATHER_API_KEY}&units=metric`,
-        );
-        if (!response.ok) {
-          throw new Error("Kota tidak ditemukan");
-        }
-        const data = await response.json();
-        const weather = `Cuaca di ${city}:\nSuhu: ${data.main.temp}°C\nKelembaban: ${data.main.humidity}%\nKondisi: ${data.weather[0].description}`;
-        await sock.sendMessage(from, { text: weather });
-      } catch (error) {
-        console.error("Weather error:", error);
-        await sock.sendMessage(from, {
-          text: "Maaf, tidak bisa mengambil info cuaca saat ini.",
-        });
-      }
     }
-    // Perintah untuk memulai permainan: "main tebak"
-    else if (messageText === "!main tebak") {
+    // Inisialisasi permainan tebak angka
+    else if (messageText === '!tebak angka') {
       // Inisialisasi permainan
       gameState[from] = {
         answer: generateRandomNumber(),
         isPlaying: true,
+        attempts: 5, // Tambahkan jumlah kesempatan
+        startTime: Date.now(), // Catat waktu mulai
       };
 
       await sock.sendMessage(from, {
         text:
           `Permainan Tebak Angka dimulai!\n` +
           `Tebak angka antara 1 dan 100.\n` +
+          `Kamu memiliki 5 kesempatan dan waktu 60 detik.\n` +
           `Ketik angka tebakanmu, atau "stop" untuk menyerah.`,
       });
       return;
@@ -164,7 +137,22 @@ async function connectToWhatsApp() {
 
     // Tangani tebakan atau perintah stop
     if (gameState[from]?.isPlaying) {
-      if (messageText === "stop") {
+      const currentTime = Date.now();
+      const elapsedTime = (currentTime - gameState[from].startTime) / 1000; // Hitung waktu berlalu dalam detik
+
+      // Periksa apakah waktu sudah habis
+      if (elapsedTime > 60) {
+        const { answer } = gameState[from];
+        delete gameState[from];
+        await sock.sendMessage(from, {
+          text:
+            `Waktu habis! Permainan dihentikan.\n` +
+            `Angka yang benar adalah ${answer}.`,
+        });
+        return;
+      }
+
+      if (messageText === 'stop') {
         const { answer } = gameState[from];
         delete gameState[from];
         await sock.sendMessage(from, {
@@ -183,7 +171,11 @@ async function connectToWhatsApp() {
         return;
       }
 
-      const { answer } = gameState[from];
+      const { answer, attempts } = gameState[from];
+
+      // Kurangi jumlah kesempatan
+      gameState[from].attempts -= 1;
+
       if (guess === answer) {
         delete gameState[from];
         await sock.sendMessage(from, {
@@ -191,13 +183,22 @@ async function connectToWhatsApp() {
             `Selamat, kamu menang!\n` +
             `Angka yang benar adalah ${answer}.`,
         });
+      } else if (gameState[from].attempts <= 0) {
+        delete gameState[from];
+        await sock.sendMessage(from, {
+          text:
+            `Kesempatan habis! Permainan dihentikan.\n` +
+            `Angka yang benar adalah ${answer}.`,
+        });
       } else if (guess > answer) {
         await sock.sendMessage(from, {
-          text: `Tebakanmu terlalu tinggi! Coba lagi.`,
+          text: `Tebakanmu terlalu tinggi! Coba lagi.\n` +
+            `Kesempatan tersisa: ${gameState[from].attempts}.`,
         });
       } else {
         await sock.sendMessage(from, {
-          text: `Tebakanmu terlalu rendah! Coba lagi.`,
+          text: `Tebakanmu terlalu rendah! Coba lagi.\n` +
+            `Kesempatan tersisa: ${gameState[from].attempts}.`,
         });
       }
       return;
