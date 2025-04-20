@@ -73,8 +73,8 @@ async function connectToWhatsApp() {
 
     const from = m.key.remoteJid;
 
-    // Cegah looping: Abaikan pesan dari bot sendiri kecuali itu adalah perintah
-    if (m.key.fromMe && !messageText.startsWith("!")) {
+    // Cegah looping: Abaikan pesan dari bot sendiri kecuali itu adalah perintah atau permainan tebak angka
+    if (m.key.fromMe && !messageText.startsWith("!") && !gameState[from]?.isPlaying) {
       return;
     }
 
