@@ -101,6 +101,70 @@ async function connectToWhatsApp() {
       return;
     }
 
+    if (messageText === '!stikerVid' && m.message.videoMessage) {
+      console.log("Pesan video diterima.");
+
+      try {
+        // Unduh video menggunakan fungsi downloadMediaMessage
+        const buffer = await downloadMediaMessage(m, "buffer", {}, { logger: P({ level: "silent" }) });
+        console.log("Video berhasil diunduh:", buffer ? "Ya" : "Tidak");
+
+        if (!buffer) {
+          await sock.sendMessage(from, {
+            text: "Maaf, terjadi kesalahan saat mengunduh video.",
+          });
+          return;
+        }
+
+        console.time("Proses video menjadi stiker");
+        const ffmpeg = require("fluent-ffmpeg");
+        const path = require("path");
+        const tempFilePath = path.join(__dirname, "temp.mp4");
+        const outputStickerPath = path.join(__dirname, "sticker.webp");
+
+        // Simpan video sementara
+        fs.writeFileSync(tempFilePath, buffer);
+
+        // Konversi video menjadi stiker menggunakan ffmpeg
+        await new Promise((resolve, reject) => {
+          ffmpeg(tempFilePath)
+            .inputFormat("mp4")
+            .outputOptions([
+              "-vf", "scale=512:512:force_original_aspect_ratio=decrease",
+              "-vcodec", "libwebp",
+              "-loop", "0",
+              "-preset", "default",
+              "-an",
+              "-vsync", "0",
+              "-s", "512x512",
+              "-t", "10", // Durasi maksimal 10 detik
+              "-f", "webp"
+            ])
+            .save(outputStickerPath)
+            .on("end", resolve)
+            .on("error", reject);
+        });
+
+        console.timeEnd("Proses video menjadi stiker");
+
+        // Kirim stiker ke pengguna
+        const stickerBuffer = fs.readFileSync(outputStickerPath);
+        await sock.sendMessage(from, { sticker: stickerBuffer });
+
+        console.log("Stiker berhasil dikirim.");
+
+        // Hapus file sementara
+        fs.unlinkSync(tempFilePath);
+        fs.unlinkSync(outputStickerPath);
+      } catch (error) {
+        console.error("Error membuat stiker dari video:", error);
+        await sock.sendMessage(from, {
+          text: "Maaf, terjadi kesalahan saat membuat stiker dari video.",
+        });
+      }
+      return;
+    }
+
     if (messageText === "!help") {
       const help =
         `____________________________________
@@ -182,7 +246,7 @@ ____________________________________`;
         text:
           `Permainan Tebak Angka dimulai!\n` +
           `Tebak angka antara 1 dan 1000.\n` +
-          `Kamu memiliki 5 kesempatan dan waktu 60 detik.\n` +
+          `Kamu memiliki 4 kesempatan dan waktu 60 detik.\n` +
           `Ketik angka tebakanmu, atau "stop" untuk menyerah.`,
       });
       return;
